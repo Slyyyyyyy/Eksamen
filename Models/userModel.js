@@ -1,8 +1,6 @@
-// models/userModel.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
-// Opprett bruker-skjema
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
