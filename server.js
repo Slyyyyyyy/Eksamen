@@ -12,7 +12,7 @@ mongoose.connect(MONGO_URI)
   .catch(err => console.error('Could not connect to MongoDB:', err));
 
 app.use(express.json());
-app.use('/api', userRoutes);
+app.use('/api/v1', userRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

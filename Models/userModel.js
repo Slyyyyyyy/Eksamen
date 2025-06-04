@@ -1,8 +1,6 @@
-// models/userModel.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
-// Opprett bruker-skjema
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -38,7 +36,6 @@ userSchema.pre('save', async function (next) {
     next(err);
   }
 });
-
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);

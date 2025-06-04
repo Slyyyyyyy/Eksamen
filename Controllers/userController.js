@@ -1,25 +1,38 @@
 const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+
+const errorResponse = (status, message) => ({
+  status: 'error',
+  code: status,
+  message
+});
+
+const successResponse = (data, links = {}) => ({
+  status: 'success',
+  data,
+  _links: links
+});
+
 exports.loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
 
     const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!user) return res.status(400).json(errorResponse(400, 'Invalid credentials'));
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!isMatch) return res.status(400).json(errorResponse(400, 'Invalid credentials'));
 
     const token = jwt.sign(
-      { username: user.username, role: user.role }, 
-      process.env.JWT_SECRET || 'secretkey',        
+      { username: user.username, role: user.role },
+      process.env.JWT_SECRET || 'secretkey',
       { expiresIn: '1h' }
     );
 
-    res.json({ token });
+    res.json(successResponse({ token }));
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json(errorResponse(500, 'Server error'));
   }
 };
 
@@ -47,7 +60,7 @@ exports.registerAdmin = async (req, res) => {
       username,
       email,
       password,
-      role: 'admin'  // Set role as admin
+      role: 'admin'
     });
     
     await admin.save();
@@ -60,19 +73,54 @@ exports.registerAdmin = async (req, res) => {
 exports.getUserByUsername = async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username }).select('-password');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    if (!user) return res.status(404).json(errorResponse(404, 'User not found'));
+
+    res.json(successResponse({
+      user: {
+        ...user.toJSON(),
+        _links: {
+          self: `/api/v1/users/${user.username}`,
+          update: `/api/v1/users/${user.username}`,
+          delete: `/api/v1/users/${user.username}`
+        }
+      }
+    }));
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json(errorResponse(500, 'Server error'));
   }
 };
 
 exports.getAllUsernames = async (req, res) => {
   try {
-    const users = await User.find({}, 'username');
-    res.json(users);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await User.countDocuments();
+    const users = await User.find({}, 'username role')
+      .skip(skip)
+      .limit(limit);
+
+    const userList = users.map(user => ({
+      username: user.username,
+      role: user.role,
+      _links: {
+        self: `/api/v1/users/${user.username}`,
+        update: `/api/v1/users/${user.username}`,
+        delete: `/api/v1/users/${user.username}`
+      }
+    }));
+
+    res.json(successResponse({
+      users: userList,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit)
+      }
+    }));
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json(errorResponse(500, 'Server error'));
   }
 };
 

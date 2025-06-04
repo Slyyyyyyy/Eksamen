@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
-const secret = process.env.JWT_SECRET || 'secretkey';  // Using the same fallback as in userController
+const secret = process.env.JWT_SECRET || 'secretkey'; 
 
 exports.authenticateToken = (req, res, next) => {
   try {
@@ -27,7 +27,6 @@ exports.authenticateToken = (req, res, next) => {
 
 exports.isAdmin = async (req, res, next) => {
   try {
-    // Endret fra findById til findOne med username
     const dbUser = await User.findOne({ username: req.user.username });
     if (!dbUser || dbUser.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
@@ -40,7 +39,6 @@ exports.isAdmin = async (req, res, next) => {
 
 exports.isSelfOrAdmin = async (req, res, next) => {
   try {
-    // Endret fra findById til findOne med username
     const dbUser = await User.findOne({ username: req.user.username });
     if (!dbUser) return res.status(404).json({ message: 'User not found' });
 
